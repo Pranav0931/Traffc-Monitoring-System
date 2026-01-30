@@ -1,0 +1,448 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles */
+:root {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: dark;
+  color: #e2e8f0;
+  background-color: #0a0a0f;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0a0a0f 0%, #12121a 50%, #0a0a0f 100%);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #12121a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3b82f6;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2563eb;
+}
+
+/* Emergency animations */
+@keyframes emergency-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.6), 0 0 40px rgba(239, 68, 68, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.8), 0 0 60px rgba(59, 130, 246, 0.4);
+  }
+}
+
+@keyframes emergency-flash {
+  0%, 50% {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  }
+  51%, 100% {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  }
+}
+
+@keyframes emergency-border {
+  0%, 50% {
+    border-color: #ef4444;
+  }
+  51%, 100% {
+    border-color: #3b82f6;
+  }
+}
+
+@keyframes glow-green {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.8);
+  }
+}
+
+@keyframes marker-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
+}
+
+.emergency-active {
+  animation: emergency-pulse 1s ease-in-out infinite;
+}
+
+.emergency-flash {
+  animation: emergency-flash 0.5s ease-in-out infinite;
+}
+
+.emergency-border {
+  animation: emergency-border 0.5s ease-in-out infinite;
+}
+
+.live-indicator {
+  animation: glow-green 2s ease-in-out infinite;
+}
+
+/* Card styles */
+.card {
+  @apply bg-traffic-card border border-traffic-border rounded-xl p-6 backdrop-blur-sm;
+  background: linear-gradient(145deg, #12121a 0%, #0d0d14 100%);
+}
+
+.card-header {
+  @apply text-lg font-semibold text-gray-200 mb-4 flex items-center gap-2;
+}
+
+/* Counter styles */
+.counter-value {
+  @apply text-4xl font-bold tabular-nums;
+  text-shadow: 0 0 20px currentColor;
+}
+
+/* Badge styles */
+.badge {
+  @apply px-4 py-2 rounded-full font-semibold text-sm uppercase tracking-wide;
+}
+
+.badge-low {
+  @apply bg-green-500/20 text-green-400 border border-green-500/30;
+}
+
+.badge-medium {
+  @apply bg-yellow-500/20 text-yellow-400 border border-yellow-500/30;
+}
+
+.badge-high {
+  @apply bg-red-500/20 text-red-400 border border-red-500/30;
+}
+
+/* Map container */
+.map-container {
+  @apply rounded-xl overflow-hidden border border-traffic-border;
+  height: 100%;
+  min-height: 400px;
+}
+
+/* Leaflet custom styles */
+.leaflet-container {
+  background: #12121a;
+  height: 100%;
+  border-radius: 12px;
+}
+
+.leaflet-tile-pane {
+  filter: brightness(0.8) saturate(0.8);
+}
+
+.custom-marker {
+  background: transparent;
+  border: none;
+}
+
+/* Status indicator */
+.status-dot {
+  @apply w-3 h-3 rounded-full;
+}
+
+.status-dot.live {
+  @apply bg-green-500;
+  box-shadow: 0 0 10px #22c55e;
+  animation: glow-green 2s ease-in-out infinite;
+}
+
+/* Emergency panel */
+.emergency-panel {
+  @apply border-2 rounded-xl p-6;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+}
+
+.emergency-panel.active {
+  animation: emergency-border 0.5s ease-in-out infinite;
+}
+
+/* Vehicle type icons */
+.vehicle-icon {
+  @apply w-8 h-8 flex items-center justify-center rounded-lg;
+}
+
+/* Live camera feed */
+.camera-feed {
+  @apply relative bg-black rounded-xl overflow-hidden;
+  aspect-ratio: 16 / 9;
+}
+
+.camera-feed canvas {
+  @apply w-full h-full;
+}
+
+/* Tab navigation */
+.tab-nav {
+  @apply flex gap-2 bg-gray-800/50 p-1 rounded-lg;
+}
+
+.tab-btn {
+  @apply px-4 py-2 rounded-lg font-medium transition-all duration-200;
+}
+
+.tab-btn.active {
+  @apply bg-blue-600 text-white shadow-lg;
+}
+
+.tab-btn:not(.active) {
+  @apply text-gray-400 hover:text-white hover:bg-gray-700;
+}
+
+/* Sparkline charts */
+.sparkline-container {
+  @apply mt-2;
+}
+
+/* Layer switcher */
+.layer-switcher {
+  @apply absolute top-2 right-2 z-[1000] bg-traffic-card border border-traffic-border rounded-lg overflow-hidden;
+}
+
+.layer-btn {
+  @apply px-3 py-1.5 text-xs font-medium transition-colors;
+}
+
+.layer-btn.active {
+  @apply bg-blue-600 text-white;
+}
+
+.layer-btn:not(.active) {
+  @apply text-gray-400 hover:bg-gray-700;
+}
+
+/* Map legend */
+.map-legend {
+  @apply absolute bottom-4 left-4 z-[1000] bg-traffic-card/90 backdrop-blur-sm border border-traffic-border rounded-lg p-3;
+}
+
+/* Gradient borders */
+.gradient-border {
+  position: relative;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* Glowing text */
+.glow-text {
+  text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+}
+
+/* Scanning line effect for camera */
+@keyframes scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+.scan-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+  animation: scan 3s linear infinite;
+}
+
+/* Detection box animation */
+@keyframes detect-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.detection-box {
+  animation: detect-pulse 1s ease-in-out infinite;
+}
+
+/* Traffic light colors */
+.traffic-green { color: #22c55e; }
+.traffic-yellow { color: #eab308; }
+.traffic-red { color: #ef4444; }
+
+/* ===== RESPONSIVE DESIGN ===== */
+
+/* Mobile First - Base styles for small screens */
+@media (max-width: 640px) {
+  /* Typography */
+  .counter-value {
+    @apply text-xl;
+  }
+  
+  .card-header {
+    @apply text-sm;
+  }
+  
+  /* Cards */
+  .card {
+    @apply p-3;
+  }
+  
+  /* Camera feed */
+  .camera-feed {
+    aspect-ratio: 4 / 3;
+  }
+  
+  /* Map container */
+  .map-container {
+    min-height: 300px;
+  }
+  
+  /* Sidebar hidden by default on mobile */
+  .sidebar-mobile-hidden {
+    transform: translateX(-100%);
+  }
+  
+  .sidebar-mobile-visible {
+    transform: translateX(0);
+  }
+  
+  /* Footer */
+  footer {
+    @apply text-xs;
+  }
+  
+  /* Vehicle counters grid */
+  .vehicle-grid {
+    @apply grid-cols-2 gap-2;
+  }
+  
+  /* Hide on mobile */
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
+/* Tablet screens */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .counter-value {
+    @apply text-2xl;
+  }
+  
+  .card {
+    @apply p-4;
+  }
+  
+  .camera-feed {
+    aspect-ratio: 16 / 10;
+  }
+  
+  .map-container {
+    min-height: 350px;
+  }
+}
+
+/* Laptop/Desktop screens */
+@media (min-width: 1025px) {
+  .counter-value {
+    @apply text-4xl;
+  }
+  
+  .card {
+    @apply p-6;
+  }
+  
+  .camera-feed {
+    aspect-ratio: 16 / 9;
+  }
+  
+  .map-container {
+    min-height: 400px;
+  }
+  
+  /* Show on desktop only */
+  .show-desktop {
+    display: block;
+  }
+}
+
+/* Large Desktop screens */
+@media (min-width: 1440px) {
+  .container {
+    max-width: 1400px;
+  }
+  
+  .counter-value {
+    @apply text-5xl;
+  }
+}
+
+/* Touch-friendly buttons on mobile */
+@media (hover: none) and (pointer: coarse) {
+  button, .btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .tab-btn {
+    @apply px-3 py-3;
+  }
+}
+
+/* Landscape mobile */
+@media (max-width: 896px) and (orientation: landscape) {
+  .camera-feed {
+    aspect-ratio: 21 / 9;
+    max-height: 60vh;
+  }
+  
+  .map-container {
+    min-height: 250px;
+  }
+}
+
+/* Safe area for notched devices */
+@supports (padding: max(0px)) {
+  .main-container {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* Print styles */
+@media print {
+  .sidebar, .no-print {
+    display: none !important;
+  }
+  
+  .main-content {
+    margin-left: 0 !important;
+  }
+}
+
