@@ -9,7 +9,8 @@ import {
   CameraModal,
   InteractiveTrafficMap,
   AlertsPanel,
-  TrafficPrediction
+  TrafficPrediction,
+  SignalControlPanel
 } from './components';
 import { useTrafficData } from './hooks/useTrafficData';
 import { 
@@ -213,6 +214,7 @@ function App() {
                     </span>
                   </div>
                   <LiveCameraFeed 
+                    frame={trafficData.frame}
                     vehicles={trafficData.vehicles || []}
                     emergencyMode={trafficData.emergency_mode}
                     fps={trafficData.fps}
@@ -244,6 +246,9 @@ function App() {
                 </div>
               </div>
             </div>
+
+            {/* Signal Control Panel */}
+            <SignalControlPanel data={trafficData} />
 
             {/* Bottom Row - Alerts & Prediction */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">

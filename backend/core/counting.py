@@ -266,3 +266,48 @@ class VehicleCounter:
         self.active_track_ids.clear()
         self.count_history.clear()
         self.start_time = time.time()
+
+
+# ====================================================================
+# ROI-Based Vehicle Counting (Additive — does not affect existing logic)
+# ====================================================================
+
+def count_vehicles_in_rois(detections, lane_rois: Dict = None) -> Dict[str, int]:
+    """
+    Count how many detected vehicles fall inside each lane ROI.
+
+    For each detection bounding box:
+      - Compute center point
+      - Check which ROI box contains the center
+      - Increment count for that lane
+
+    Args:
+        detections: List of Detection objects (from detection.py)
+        lane_rois: Dict mapping lane_id -> (x1, y1, x2, y2).
+                   If None, uses default LANE_ROIS from roi module.
+
+    Returns:
+        Dictionary mapping lane_id -> vehicle count inside that lane
+        e.g. {"lane_1": 5, "lane_2": 3, "lane_3": 8}
+    """
+    from core.roi import LANE_ROIS, is_point_in_roi
+
+    if lane_rois is None:
+        lane_rois = LANE_ROIS
+
+    # Initialize counts to zero for every lane
+    lane_counts: Dict[str, int] = {lane_id: 0 for lane_id in lane_rois}
+
+    for det in detections:
+        # Compute center of the detection bounding box
+        x1, y1, x2, y2 = det.bbox
+        cx = (x1 + x2) // 2
+        cy = (y1 + y2) // 2
+
+        # Check which ROI contains this center point
+        for lane_id, roi in lane_rois.items():
+            if is_point_in_roi((cx, cy), roi):
+                lane_counts[lane_id] += 1
+                break  # A vehicle belongs to at most one lane
+
+    return lane_counts

@@ -86,8 +86,8 @@ class EmergencyPrioritySystem:
     
     # Alert messages
     ALERT_MESSAGES = {
-        EmergencyType.AMBULANCE: "🚨 Emergency Vehicle Detected – Ambulance – Priority Clearance Required",
-        EmergencyType.FIREBRIGADE: "🚨 Emergency Vehicle Detected – Fire Brigade – Priority Clearance Required"
+        EmergencyType.AMBULANCE: "[ALERT] Emergency Vehicle Detected - Ambulance - Priority Clearance Required",
+        EmergencyType.FIREBRIGADE: "[ALERT] Emergency Vehicle Detected - Fire Brigade - Priority Clearance Required"
     }
     
     # Priority levels based on emergency type
@@ -166,7 +166,7 @@ class EmergencyPrioritySystem:
                     # Create new alert
                     alert = self._create_alert(track)
                     self.active_alerts[track.track_id] = alert
-                    logger.warning(f"🚨 EMERGENCY DETECTED: {alert.message}")
+                    logger.warning(f"[EMERGENCY] DETECTED: {alert.message}")
                     
                     # Trigger callback if set
                     if self.on_emergency_detected:

@@ -4,7 +4,14 @@ Main entry point for the Traffic Monitoring System backend.
 
 import uvicorn
 import sys
+import io
 from pathlib import Path
+
+# Fix Windows console encoding for Unicode characters
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+if sys.stderr.encoding != 'utf-8':
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 # Add backend directory to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -29,14 +36,15 @@ logger.add(
 
 def main():
     """Run the traffic monitoring server."""
-    logger.info(f"""
-    ╔══════════════════════════════════════════════════════════════╗
-    ║     AI-Based Traffic Monitoring & Emergency Priority System  ║
-    ║                                                              ║
-    ║     Location: {settings.LOCATION_NAME:<43} ║
-    ║     Server:   http://{settings.HOST}:{settings.PORT:<36} ║
-    ╚══════════════════════════════════════════════════════════════╝
-    """)
+    logger.info(
+        "\n"
+        "    =============================================================\n"
+        "    |  AI-Based Traffic Monitoring & Emergency Priority System  |\n"
+        "    |                                                           |\n"
+        f"    |  Location: {settings.LOCATION_NAME:<48}|\n"
+        f"    |  Server:   http://{settings.HOST}:{settings.PORT:<41}|\n"
+        "    =============================================================\n"
+    )
     
     uvicorn.run(
         "api.app:app",
