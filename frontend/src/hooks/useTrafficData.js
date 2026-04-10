@@ -38,7 +38,12 @@ export function useTrafficData() {
     flow_rate: 0,
     peak_hour: false,
     monitoring_points: [],
-    density_score: 0
+    density_score: 0,
+    // ROI-based signal control fields
+    lane_counts: {},
+    signal_times: {},
+    priority_lane: null,
+    signal_mode: 'NORMAL'
   });
   
   const [connectionStatus, setConnectionStatus] = useState('connecting');

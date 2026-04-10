@@ -79,7 +79,7 @@ manager = ConnectionManager()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan handler."""
-    logger.info("🚀 Starting Traffic Monitoring System...")
+    logger.info("[START] Starting Traffic Monitoring System...")
     
     # Initialize pipeline
     success = await initialize_pipeline()
@@ -92,7 +92,7 @@ async def lifespan(app: FastAPI):
     # Start broadcast loop
     broadcast_task = asyncio.create_task(manager.start_broadcast_loop())
     
-    logger.info("✅ Traffic Monitoring System started successfully")
+    logger.info("[OK] Traffic Monitoring System started successfully")
     
     yield
     

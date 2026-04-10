@@ -13,9 +13,11 @@ from loguru import logger
 from core.video_capture import VideoCapture
 from core.detection import VehicleDetector, Detection
 from core.tracking import MultiObjectTracker, Track
-from core.counting import VehicleCounter, VehicleCount
+from core.counting import VehicleCounter, VehicleCount, count_vehicles_in_rois
 from core.congestion import CongestionComputer, CongestionStatus
 from core.emergency import EmergencyPrioritySystem, EmergencyStatus
+from core.roi import draw_rois, LANE_ROIS
+from core.signal_control import calculate_signal_times, get_priority_lane, get_signal_status
 from config.settings import settings
 
 
@@ -61,12 +63,23 @@ class TrafficState:
     peak_hour: bool = False
     monitoring_points: List[Dict] = None
     density_score: float = 0.0
+    # ROI-based signal control fields
+    lane_counts: Dict = None
+    signal_times: Dict = None
+    priority_lane: Optional[str] = None
+    signal_mode: str = "NORMAL"
+    # Base64 encoded frame for live video streaming
+    frame: str = ""
     
     def __post_init__(self):
         if self.vehicles is None:
             self.vehicles = []
         if self.monitoring_points is None:
             self.monitoring_points = []
+        if self.lane_counts is None:
+            self.lane_counts = {}
+        if self.signal_times is None:
+            self.signal_times = {}
     
     def to_dict(self) -> Dict:
         """Convert to dictionary for JSON serialization."""
@@ -94,7 +107,13 @@ class TrafficState:
             "flow_rate": self.flow_rate,
             "peak_hour": self.peak_hour,
             "monitoring_points": self.monitoring_points,
-            "density_score": self.density_score
+            "density_score": self.density_score,
+            # ROI-based signal control data
+            "lane_counts": self.lane_counts,
+            "signal_times": self.signal_times,
+            "priority_lane": self.priority_lane,
+            "signal_mode": self.signal_mode,
+            "frame": self.frame,
         }
 
 
@@ -196,8 +215,29 @@ class TrafficPipeline:
                 # Update emergency system
                 emergency_status = self.emergency_system.update(tracks, counts)
                 
-                # Create state snapshot
-                self.current_state = self._create_state(counts, congestion_status, emergency_status)
+                # --- ROI-based lane counting and signal control ---
+                lane_counts = count_vehicles_in_rois(detections)
+                signal_times = calculate_signal_times(lane_counts)
+                priority_lane = get_priority_lane(lane_counts)
+                
+                # Draw ROIs and encode frame to base64
+                drawn_frame = draw_rois(frame.copy(), lane_counts, signal_times, priority_lane)
+                import cv2, base64
+                # Downscale slightly for performance if needed, or compress
+                # We'll stick to original size but use higher compression
+                encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 70]
+                _, buffer = cv2.imencode('.jpg', drawn_frame, encode_param)
+                frame_b64 = base64.b64encode(buffer).decode('utf-8')
+                logger.info(f"Encoded frame length: {len(frame_b64)}")
+                
+                # Create state snapshot (with lane data and base64 frame)
+                self.current_state = self._create_state(
+                    counts, congestion_status, emergency_status,
+                    lane_counts=lane_counts,
+                    signal_times=signal_times,
+                    priority_lane=priority_lane,
+                    frame_b64=frame_b64,
+                )
                 
                 # Trigger callback if set
                 if self.on_state_update:
@@ -224,7 +264,11 @@ class TrafficPipeline:
     
     def _create_state(self, counts: VehicleCount, 
                       congestion: CongestionStatus,
-                      emergency: EmergencyStatus) -> TrafficState:
+                      emergency: EmergencyStatus,
+                      lane_counts: Dict = None,
+                      signal_times: Dict = None,
+                      priority_lane: str = None,
+                      frame_b64: str = "") -> TrafficState:
         """
         Create a complete traffic state snapshot.
         
@@ -232,6 +276,10 @@ class TrafficPipeline:
             counts: Current vehicle counts
             congestion: Current congestion status
             emergency: Current emergency status
+            lane_counts: Vehicle counts per ROI lane
+            signal_times: Calculated signal times per lane
+            priority_lane: Lane with highest vehicle count
+            frame_b64: Base64 encoded JPEG frame
             
         Returns:
             TrafficState object
@@ -274,6 +322,16 @@ class TrafficPipeline:
         # Calculate density score (0-100)
         density_score = min(100, (counts.total_with_emergency / 40) * 100)
         
+        # Determine signal mode from lane counts
+        from core.signal_control import THRESHOLD
+        signal_mode = "NORMAL"
+        if lane_counts:
+            overloaded = sum(1 for c in lane_counts.values() if c >= THRESHOLD)
+            if overloaded >= len(lane_counts):
+                signal_mode = "CRITICAL"
+            elif overloaded > 0:
+                signal_mode = "ADAPTIVE"
+        
         return TrafficState(
             cars=counts.cars,
             bikes=counts.bikes,
@@ -298,7 +356,13 @@ class TrafficPipeline:
             flow_rate=round(flow_rate, 1),
             peak_hour=peak_hour,
             monitoring_points=monitoring_points,
-            density_score=round(density_score, 1)
+            density_score=round(density_score, 1),
+            # ROI-based signal control data
+            lane_counts=lane_counts or {},
+            signal_times=signal_times or {},
+            priority_lane=priority_lane,
+            signal_mode=signal_mode,
+            frame=frame_b64,
         )
     
     def _get_direction(self, velocity: tuple) -> str:
