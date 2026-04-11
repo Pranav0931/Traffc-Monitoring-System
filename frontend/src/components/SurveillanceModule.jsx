@@ -25,7 +25,10 @@ export default function SurveillanceModule({ trafficData = {}, intersections = [
   }, [intersections]);
 
   const currentIntersection = intersectionList[selectedIntersection] || intersectionList[0];
-  const frame = trafficData.frame || '';
+  const rawFrame = trafficData?.frame || trafficData?.frame_b64 || trafficData?.image || '';
+  const frameSrc = rawFrame
+    ? (rawFrame.startsWith('data:image') ? rawFrame : `data:image/jpeg;base64,${rawFrame}`)
+    : '';
 
   const getRotation = (index) => {
     // Simulate different angles by applying CSS transforms
@@ -106,9 +109,9 @@ export default function SurveillanceModule({ trafficData = {}, intersections = [
             >
               {/* Camera Feed */}
               <div className="aspect-video relative overflow-hidden">
-                {frame ? (
+                {frameSrc ? (
                   <img
-                    src={`data:image/jpeg;base64,${frame}`}
+                    src={frameSrc}
                     alt={`${angle} view`}
                     className="w-full h-full object-cover transition-transform duration-300"
                     style={{
@@ -177,9 +180,9 @@ export default function SurveillanceModule({ trafficData = {}, intersections = [
           {/* Expanded Feed */}
           <div className="relative rounded-xl overflow-hidden bg-gray-900 border border-gray-700/50">
             <div className="aspect-video relative">
-              {frame ? (
+              {frameSrc ? (
                 <img
-                  src={`data:image/jpeg;base64,${frame}`}
+                  src={frameSrc}
                   alt={`${cameraAngles[activeAngle]} view`}
                   className="w-full h-full object-cover transition-transform duration-500"
                   style={{

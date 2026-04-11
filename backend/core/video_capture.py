@@ -33,6 +33,8 @@ class VideoCapture:
         self.width = settings.FRAME_WIDTH
         self.height = settings.FRAME_HEIGHT
         self._last_frame_time = 0
+        self._read_fail_count = 0
+        self._using_demo_fallback = False
         
     def _init_capture(self) -> bool:
         """Initialize the video capture object."""
@@ -50,7 +52,12 @@ class VideoCapture:
                     camera_indices = [1, 0]
 
                 for idx in camera_indices:
-                    cap = cv2.VideoCapture(idx)
+                    # Prefer DirectShow on Windows to avoid MSMF frame-grab issues.
+                    cap = cv2.VideoCapture(idx, cv2.CAP_DSHOW)
+                    if (not cap) or (not cap.isOpened()):
+                        if cap:
+                            cap.release()
+                        cap = cv2.VideoCapture(idx)
                     if cap and cap.isOpened():
                         self.cap = cap
                         self.source = str(idx)
@@ -146,17 +153,47 @@ class VideoCapture:
             if self.cap and self.cap.isOpened():
                 ret, frame = self.cap.read()
                 if ret:
+                    self._read_fail_count = 0
+                    self._using_demo_fallback = False
                     self.frame_count += 1
                     return True, frame
                 else:
-                    # Loop video files; for camera streams return a failed read.
+                    self._read_fail_count += 1
+                    # Loop video files when possible.
                     self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                    return False, None
+
+                    # Periodically try to recover camera connection.
+                    if self.source.isdigit() and self._read_fail_count in {30, 120, 300}:
+                        logger.warning("Attempting camera reinitialization after repeated read failures")
+                        try:
+                            if self.cap:
+                                self.cap.release()
+                                self.cap = None
+                            self._init_capture()
+                        except Exception as reconnect_error:
+                            logger.warning(f"Camera reinitialization failed: {reconnect_error}")
+
+                    # Camera/stream unavailable: keep pipeline alive with synthetic frames.
+                    demo = self._generate_demo_frame()
+                    self.frame_count += 1
+                    if self._read_fail_count % 120 == 1:
+                        logger.warning("Camera read failed; using demo fallback frame")
+                    self._using_demo_fallback = True
+                    return True, demo
             else:
-                return False, None
+                self._read_fail_count += 1
+                demo = self._generate_demo_frame()
+                self.frame_count += 1
+                if self._read_fail_count % 120 == 1:
+                    logger.warning("Video capture unavailable; using demo fallback frame")
+                self._using_demo_fallback = True
+                return True, demo
         except Exception as e:
             logger.error(f"Error reading frame: {e}")
-            return False, None
+            demo = self._generate_demo_frame()
+            self.frame_count += 1
+            self._using_demo_fallback = True
+            return True, demo
     
     async def frame_generator(self) -> AsyncGenerator[np.ndarray, None]:
         """

@@ -75,19 +75,30 @@ export function useTrafficData() {
   const shouldReconnectRef = useRef(true);
   const isUnmountedRef = useRef(false);
 
+  const mergeTrafficPayload = useCallback((previous, incoming) => {
+    const next = incoming || {};
+
+    return {
+      ...previous,
+      ...next,
+      // Keep rendering the latest valid frame even when fallback endpoints omit it.
+      frame: next.frame ?? next.frame_b64 ?? previous?.frame ?? '',
+    };
+  }, []);
+
   // Fetch data via REST API (fallback)
   const fetchTrafficStatus = useCallback(async () => {
     try {
       const response = await fetch(`${API_URL}/traffic-status`);
       if (response.ok) {
         const data = await response.json();
-        setTrafficData(data);
+        setTrafficData((previous) => mergeTrafficPayload(previous, data));
         setLastUpdate(Date.now());
       }
     } catch (error) {
       console.error('Failed to fetch traffic status:', error);
     }
-  }, []);
+  }, [mergeTrafficPayload]);
 
   // Setup WebSocket connection
   const connectWebSocket = useCallback(() => {
@@ -135,7 +146,7 @@ export function useTrafficData() {
           }
           
           const data = JSON.parse(event.data);
-          setTrafficData(data);
+          setTrafficData((previous) => mergeTrafficPayload(previous, data));
           setLastUpdate(Date.now());
         } catch (error) {
           console.error('Failed to parse WebSocket message:', error);
@@ -180,7 +191,7 @@ export function useTrafficData() {
         pollIntervalRef.current = setInterval(fetchTrafficStatus, 2000);
       }
     }
-  }, [fetchTrafficStatus]);
+  }, [fetchTrafficStatus, mergeTrafficPayload]);
 
   // Initialize connection
   useEffect(() => {
