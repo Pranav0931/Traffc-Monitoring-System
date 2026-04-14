@@ -1,8 +1,18 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
+function normalizeLocalhost(url = '', ws = false) {
+  const fallback = ws ? 'ws://127.0.0.1:8000/ws' : 'http://127.0.0.1:8000';
+  const base = (url || fallback).replace(/\/+$/, '');
+  return base
+    .replace('ws://localhost:', 'ws://127.0.0.1:')
+    .replace('wss://localhost:', 'wss://127.0.0.1:')
+    .replace('http://localhost:', 'http://127.0.0.1:')
+    .replace('https://localhost:', 'https://127.0.0.1:');
+}
+
 // Use environment variables for API URLs (works with Vite)
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://127.0.0.1:8000/ws';
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+const WS_URL = normalizeLocalhost(import.meta.env.VITE_WS_URL, true);
+const API_URL = normalizeLocalhost(import.meta.env.VITE_API_URL, false);
 
 // Full WebSocket endpoint
 const WS_TRAFFIC_URL = `${WS_URL}/traffic`;
@@ -62,6 +72,19 @@ export function useTrafficData() {
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
   const pollIntervalRef = useRef(null);
+  const shouldReconnectRef = useRef(true);
+  const isUnmountedRef = useRef(false);
+
+  const mergeTrafficPayload = useCallback((previous, incoming) => {
+    const next = incoming || {};
+
+    return {
+      ...previous,
+      ...next,
+      // Keep rendering the latest valid frame even when fallback endpoints omit it.
+      frame: next.frame ?? next.frame_b64 ?? previous?.frame ?? '',
+    };
+  }, []);
 
   // Fetch data via REST API (fallback)
   const fetchTrafficStatus = useCallback(async () => {
@@ -69,17 +92,25 @@ export function useTrafficData() {
       const response = await fetch(`${API_URL}/traffic-status`);
       if (response.ok) {
         const data = await response.json();
-        setTrafficData(data);
+        setTrafficData((previous) => mergeTrafficPayload(previous, data));
         setLastUpdate(Date.now());
       }
     } catch (error) {
       console.error('Failed to fetch traffic status:', error);
     }
-  }, []);
+  }, [mergeTrafficPayload]);
 
   // Setup WebSocket connection
   const connectWebSocket = useCallback(() => {
+    if (!shouldReconnectRef.current || isUnmountedRef.current) {
+      return;
+    }
+
     if (wsRef.current?.readyState === WebSocket.OPEN) {
+      return;
+    }
+
+    if (wsRef.current?.readyState === WebSocket.CONNECTING) {
       return;
     }
 
@@ -90,6 +121,11 @@ export function useTrafficData() {
       ws.onopen = () => {
         console.log('WebSocket connected');
         setConnectionStatus('connected');
+
+        if (reconnectTimeoutRef.current) {
+          clearTimeout(reconnectTimeoutRef.current);
+          reconnectTimeoutRef.current = null;
+        }
         
         // Clear polling if active
         if (pollIntervalRef.current) {
@@ -110,7 +146,7 @@ export function useTrafficData() {
           }
           
           const data = JSON.parse(event.data);
-          setTrafficData(data);
+          setTrafficData((previous) => mergeTrafficPayload(previous, data));
           setLastUpdate(Date.now());
         } catch (error) {
           console.error('Failed to parse WebSocket message:', error);
@@ -120,6 +156,10 @@ export function useTrafficData() {
       ws.onclose = () => {
         console.log('WebSocket disconnected');
         setConnectionStatus('disconnected');
+
+        if (!shouldReconnectRef.current || isUnmountedRef.current) {
+          return;
+        }
         
         // Start polling as fallback
         if (!pollIntervalRef.current) {
@@ -127,6 +167,9 @@ export function useTrafficData() {
         }
         
         // Attempt to reconnect
+        if (reconnectTimeoutRef.current) {
+          clearTimeout(reconnectTimeoutRef.current);
+        }
         reconnectTimeoutRef.current = setTimeout(() => {
           console.log('Attempting to reconnect...');
           setConnectionStatus('connecting');
@@ -148,24 +191,33 @@ export function useTrafficData() {
         pollIntervalRef.current = setInterval(fetchTrafficStatus, 2000);
       }
     }
-  }, [fetchTrafficStatus]);
+  }, [fetchTrafficStatus, mergeTrafficPayload]);
 
   // Initialize connection
   useEffect(() => {
+    isUnmountedRef.current = false;
+    shouldReconnectRef.current = true;
+
     connectWebSocket();
     
     // Initial fetch
     fetchTrafficStatus();
 
     return () => {
+      isUnmountedRef.current = true;
+      shouldReconnectRef.current = false;
+
       if (wsRef.current) {
         wsRef.current.close();
+        wsRef.current = null;
       }
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
       }
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
       }
     };
   }, [connectWebSocket, fetchTrafficStatus]);

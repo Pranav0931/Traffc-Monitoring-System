@@ -3,12 +3,19 @@ import { Camera, Play, Pause, Maximize2, RefreshCw } from 'lucide-react';
 
 /**
  * Live Camera Feed component
- * Displays base64 encoded live video stream from backend
+ * Displays base64 encoded live video stream from backend.
+ * Accepts either { trafficData, onExpand } or { frame, vehicles, emergencyMode, fps }.
  */
-export default function LiveCameraFeed({ frame, vehicles = [], emergencyMode = false, fps = 0 }) {
+export default function LiveCameraFeed({ trafficData, onExpand, frame: frameProp, vehicles: vehiclesProp, emergencyMode: emProp, fps: fpsProp }) {
   const containerRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Resolve props — support both trafficData object and individual props
+  const frame = frameProp || trafficData?.frame;
+  const vehicles = vehiclesProp || trafficData?.vehicles || [];
+  const emergencyMode = emProp ?? trafficData?.emergency_mode ?? false;
+  const fps = fpsProp ?? trafficData?.fps ?? 0;
   
   // Toggle fullscreen
   const toggleFullscreen = () => {
@@ -81,7 +88,7 @@ export default function LiveCameraFeed({ frame, vehicles = [], emergencyMode = f
           {/* Right controls */}
           <div className="flex items-center gap-3">
             <button
-              onClick={toggleFullscreen}
+              onClick={onExpand || toggleFullscreen}
               className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
             >
               <Maximize2 size={18} />

@@ -1,11 +1,11 @@
-"""
-Main entry point for the Traffic Monitoring System backend.
-"""
+"""Main entry point for the Traffic Monitoring System backend."""
+
+import io
+import sys
+from pathlib import Path
 
 import uvicorn
-import sys
-import io
-from pathlib import Path
+from fastapi import FastAPI
 
 # Fix Windows console encoding for Unicode characters
 if sys.stdout.encoding != 'utf-8':
@@ -16,8 +16,12 @@ if sys.stderr.encoding != 'utf-8':
 # Add backend directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
+from api.app import app as api_app
 from config.settings import settings
 from loguru import logger
+
+# ASGI app entrypoint used by: uvicorn backend.main:app --reload
+app: FastAPI = api_app
 
 # Configure logging
 logger.remove()

@@ -15,4 +15,5 @@ export { default as SolarPowerPanel } from './SolarPowerPanel';
 export { default as EnvironmentalPanel } from './EnvironmentalPanel';
 export { default as SurveillanceModule } from './SurveillanceModule';
 export { default as IntersectionDetailPanel } from './IntersectionDetailPanel';
+export { default as GoogleTrafficMap } from './GoogleTrafficMap';
 
