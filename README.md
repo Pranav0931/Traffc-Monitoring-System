@@ -1,5 +1,18 @@
 ﻿# AI Smart Traffic Monitoring and Emergency Priority System
 
+<div align="center">
+
+![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![React](https://img.shields.io/badge/React-Frontend-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![Vite](https://img.shields.io/badge/Vite-Build-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![YOLOv8](https://img.shields.io/badge/YOLOv8-Detection-111111?style=for-the-badge)
+![OpenCV](https://img.shields.io/badge/OpenCV-Computer%20Vision-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)
+![WebSocket](https://img.shields.io/badge/WebSocket-Real--Time-4CAF50?style=for-the-badge)
+![TailwindCSS](https://img.shields.io/badge/TailwindCSS-UI-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
+
+</div>
+
 Production-ready, real-time traffic intelligence platform built with FastAPI, YOLOv8, WebSockets, and React.
 
 The system performs live vehicle detection, congestion estimation, adaptive signaling, emergency-priority routing, and multi-panel visualization for traffic operations.
@@ -16,10 +29,20 @@ The system performs live vehicle detection, congestion estimation, adaptive sign
 8. [Configuration](#configuration)
 9. [API and WebSocket Reference](#api-and-websocket-reference)
 10. [Data Model Snapshot](#data-model-snapshot)
-11. [Troubleshooting](#troubleshooting)
-12. [Deployment Notes](#deployment-notes)
-13. [Roadmap](#roadmap)
-14. [License](#license)
+11. [Operational Validation Checklist](#operational-validation-checklist)
+12. [Performance and Tuning Notes](#performance-and-tuning-notes)
+13. [Troubleshooting](#troubleshooting)
+14. [Deployment Notes](#deployment-notes)
+15. [Contributing](#contributing)
+16. [Roadmap](#roadmap)
+17. [License](#license)
+
+## Highlights
+
+- End-to-end real-time AI traffic monitoring stack
+- Adaptive and emergency-aware signal strategy
+- Streaming dashboard with map, camera, alerts, and analytics
+- Windows-first local development workflow
 
 ## Overview
 
@@ -47,8 +70,46 @@ Default location profile: Variety Square, Nagpur.
 - Environmental monitoring (AQI/noise) simulation
 - Live alerts and severity breakdown
 - WebSocket streaming with REST fallback in frontend
+- Modular backend pipeline for extension and testing
+- Ready-to-run Windows launch scripts for backend and frontend
 
 ## Architecture
+
+### Pipeline Diagram (Mermaid)
+
+```mermaid
+flowchart TD
+  A[Video Source<br/>Webcam / RTSP / File] --> B[Frame Capture]
+  B --> C[YOLOv8 Detection]
+  C --> D[Multi Object Tracking]
+  D --> E[Counting and ROI Analysis]
+  E --> F[Congestion and Emergency Logic]
+  F --> G[Signal and Intersection Manager]
+  G --> H[FastAPI REST API]
+  G --> I[WebSocket Stream]
+  H --> J[React Dashboard]
+  I --> J
+```
+
+### Operational Sequence (Mermaid)
+
+```mermaid
+sequenceDiagram
+  participant Cam as Camera Source
+  participant BE as Backend Pipeline
+  participant API as FastAPI
+  participant WS as WebSocket
+  participant UI as React Dashboard
+
+  Cam->>BE: Frame
+  BE->>BE: Detect + Track + Compute State
+  BE->>API: Update current status
+  API->>WS: Broadcast state payload
+  WS->>UI: Push real-time update
+  UI->>UI: Render counters, map, alerts, feed
+```
+
+### Text Fallback
 
 ```text
 Video Source (Webcam/RTSP/File)
@@ -77,6 +138,14 @@ Frontend:
 - Google Maps (`@react-google-maps/api`)
 - Leaflet / React-Leaflet
 - Lucide icons
+
+Deployment configuration files included:
+
+- `backend/render.yaml`
+- `backend/railway.json`
+- `backend/Procfile`
+- `frontend/netlify.toml`
+- `frontend/vercel.json`
 
 ## Project Structure
 
@@ -169,15 +238,21 @@ npm run dev
 
 Primary runtime settings are in `backend/config/settings.py`.
 
-High-impact options include:
-
-- `VIDEO_SOURCE` (camera index, RTSP URL, or file path)
-- `HOST`, `PORT`
-- `YOLO_MODEL`, `YOLO_CONFIDENCE`
-- Congestion thresholds (`CONGESTION_LOW_THRESHOLD`, `CONGESTION_MEDIUM_THRESHOLD`)
-- `WEBSOCKET_UPDATE_INTERVAL`
-- Intersection definitions (`INTERSECTIONS`)
-- Alert/environment thresholds
+| Setting | Purpose | Default |
+|---|---|---|
+| `HOST` | Backend bind host | `0.0.0.0` |
+| `PORT` | Backend port | `8000` |
+| `VIDEO_SOURCE` | Camera index / RTSP / file path | `0` |
+| `VIDEO_FPS` | Target capture FPS | `30` |
+| `FRAME_WIDTH`, `FRAME_HEIGHT` | Capture resolution | `1280x720` |
+| `YOLO_MODEL` | Model weight file | `yolov8n.pt` |
+| `YOLO_CONFIDENCE` | Detection confidence threshold | `0.5` |
+| `YOLO_IOU_THRESHOLD` | IoU threshold | `0.45` |
+| `WEBSOCKET_UPDATE_INTERVAL` | WS broadcast interval (s) | `2.0` |
+| `CONGESTION_LOW_THRESHOLD` | Lower congestion boundary | `10` |
+| `CONGESTION_MEDIUM_THRESHOLD` | Medium congestion boundary | `20` |
+| `AQI_ALERT_THRESHOLD` | AQI alert threshold | `150` |
+| `NOISE_ALERT_THRESHOLD` | Noise alert threshold (dB) | `80.0` |
 
 ### Frontend environment variables
 
@@ -189,7 +264,11 @@ VITE_WS_URL=ws://127.0.0.1:8000/ws
 VITE_GOOGLE_MAPS_API_KEY=YOUR_KEY_HERE
 ```
 
-Note: `VITE_WS_URL` is a base path (`.../ws`) and the client appends `/traffic`.
+Notes:
+
+- `VITE_WS_URL` is a base path (`.../ws`) and the client appends `/traffic`.
+- The frontend normalizes `localhost` to `127.0.0.1` for more reliable local WS/API behavior on some Windows setups.
+- If no Google Maps key is set, map components should still fail gracefully depending on component fallback logic.
 
 ## API and WebSocket Reference
 
@@ -207,10 +286,35 @@ Note: `VITE_WS_URL` is a base path (`.../ws`) and the client appends `/traffic`.
 - `GET /alerts` - Active alerts and summary
 - `POST /emergency/green-corridor` - Manual test trigger
 
+Example request for manual corridor trigger:
+
+```powershell
+Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:8000/emergency/green-corridor?start_id=variety_square&emergency_type=ambulance"
+```
+
 ### WebSocket endpoints
 
 - `/ws/traffic` - Live traffic state stream
 - `/ws/stats` - Periodic statistics stream
+
+Quick JavaScript WS example:
+
+```javascript
+const ws = new WebSocket("ws://127.0.0.1:8000/ws/traffic");
+
+ws.onopen = () => {
+  console.log("connected");
+  ws.send("status");
+};
+
+ws.onmessage = (event) => {
+  if (event.data === "ping") {
+    ws.send("pong");
+    return;
+  }
+  console.log("traffic payload", JSON.parse(event.data));
+};
+```
 
 ## Data Model Snapshot
 
@@ -245,6 +349,29 @@ Typical fields in traffic payloads (`/traffic-status` and `/ws/traffic`):
 
 Depending on pipeline state, payload may also include a Base64 frame field.
 
+## Operational Validation Checklist
+
+Use this checklist after setup or before demo:
+
+1. Backend starts without import/runtime errors.
+2. `GET /health` returns `healthy` after initialization.
+3. Frontend establishes WebSocket connection (`connected` status).
+4. `GET /traffic-status` returns changing timestamps over time.
+5. Vehicle counters update while camera/video source is active.
+6. Congestion badge and map markers react to load changes.
+7. Alerts tab displays generated system alerts.
+8. Emergency trigger endpoint returns corridor activation payload.
+9. Solar and environmental panels receive non-empty data objects.
+
+## Performance and Tuning Notes
+
+- Use `yolov8n.pt` for maximum real-time throughput on CPU.
+- Reduce `FRAME_WIDTH`/`FRAME_HEIGHT` if FPS drops on low-end machines.
+- Increase `WEBSOCKET_UPDATE_INTERVAL` to reduce frontend update pressure.
+- For GPU systems, tune YOLO model size and confidence thresholds for balance between recall and speed.
+- Keep capture source stable (avoid frequent source switching) for smoother tracker behavior.
+- Prefer one backend process per camera source profile unless you introduce source multiplexing.
+
 ## Troubleshooting
 
 ### Camera not opening (Windows)
@@ -265,6 +392,18 @@ Depending on pipeline state, payload may also include a Base64 frame field.
 
 - Ensure `ultralytics`, `torch`, and `opencv-python` are installed.
 - Keep `yolov8n.pt` under `backend/` (or allow first-run auto-download).
+
+### WebSocket opens but no live updates
+
+- Check that pipeline startup completed and `GET /traffic-status` is not static.
+- Ensure `WEBSOCKET_UPDATE_INTERVAL` is reasonable (for example `2.0`).
+- Confirm browser console is not showing repeated JSON parse errors.
+
+### Frontend shows empty map or map errors
+
+- Verify `VITE_GOOGLE_MAPS_API_KEY` is set correctly when using Google Maps components.
+- Restart Vite server after editing `.env` files.
+- Check browser console network tab for blocked Maps script loads.
 
 ### Port conflict
 
@@ -288,6 +427,30 @@ Before production deployment:
 - Add structured logging and monitoring
 - Configure process management and restart policy
 - Tune model/device settings for target hardware
+
+Recommended backend production command example:
+
+```powershell
+python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --workers 1
+```
+
+Note: keep workers at `1` unless you redesign shared in-memory pipeline state for multi-worker safety.
+
+## Contributing
+
+Contributions are welcome for:
+
+- Model and tracking quality improvements
+- Intersection policy logic and emergency routing enhancements
+- Dashboard UX and analytics modules
+- Test automation and CI hardening
+
+Suggested workflow:
+
+1. Fork and create a feature branch.
+2. Keep commits focused and descriptive.
+3. Test backend + frontend locally before PR.
+4. Open a PR with a clear problem statement and screenshots/logs when relevant.
 
 ## Roadmap
 
