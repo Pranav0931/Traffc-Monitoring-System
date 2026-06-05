@@ -308,6 +308,8 @@ function App() {
       {/* Camera Modal */}
       {cameraModalOpen && (
         <CameraModal 
+          isOpen={cameraModalOpen}
+          location={selectedIntersection || { id: 'variety_square', name: trafficData?.area || 'Variety Square, Nagpur', lat: trafficData?.lat || 21.1458, lng: trafficData?.lng || 79.0882 }}
           trafficData={trafficData}
           onClose={() => setCameraModalOpen(false)}
         />

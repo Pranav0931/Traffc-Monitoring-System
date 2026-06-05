@@ -1,4 +1,4 @@
-﻿# AI Smart Traffic Monitoring and Emergency Priority System
+# AI Smart Traffic Monitoring and Emergency Priority System
 
 <div align="center">
 
@@ -268,7 +268,7 @@ Notes:
 
 - `VITE_WS_URL` is a base path (`.../ws`) and the client appends `/traffic`.
 - The frontend normalizes `localhost` to `127.0.0.1` for more reliable local WS/API behavior on some Windows setups.
-- If no Google Maps key is set, map components should still fail gracefully depending on component fallback logic.
+- **Leaflet Fallback Map**: If no Google Maps API key is provided, the dashboard and map tabs automatically fall back to an interactive Leaflet/OpenStreetMap dark mode map (powered by CartoDB Dark Matter tiles) with fully functional markers, circles, and green corridors out of the box.
 
 ## API and WebSocket Reference
 
